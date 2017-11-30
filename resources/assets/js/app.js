@@ -15,6 +15,19 @@ require('datatables.net-bs4');
 
 window.Vue = require('vue');
 
+// Import Vue Router for the single page application
+import VueRouter from 'vue-router'
+
+import routes from './routes';
+
+var router = new VueRouter({
+    history: true,
+    root: 'app',
+    routes
+});
+
+Vue.use(VueRouter)
+
 //Import the Vuelidate validation plugin
 
 import Vuelidate from 'vuelidate'

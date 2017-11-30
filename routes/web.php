@@ -14,7 +14,7 @@
 
 Route::group(['middleware' => 'cas.auth'], function () {
     Route::get('/', function () {
-        return view('welcome');
+        return view('spa');
     });
 
     Route::get('faset', function () {
