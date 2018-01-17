@@ -13,11 +13,13 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('jwt.auth')->get('v1/user', function (Request $request) {
+Route::middleware('auth:api')->get('v1/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['prefix' => 'v1/', 'middleware' => ['jwt.auth', 'cas.auth']], function () {
+Route::post('v1/attendance', 'AttendanceController@store');
+
+Route::group(['prefix' => 'v1/', 'middleware' => ['auth.token', 'auth.cas.force']], function () {
     Route::post('faset', 'FasetVisitController@store');
     Route::get('faset', 'FasetVisitController@index');
     Route::get('faset/dedup', 'FasetVisitController@dedup');
@@ -25,6 +27,7 @@ Route::group(['prefix' => 'v1/', 'middleware' => ['jwt.auth', 'cas.auth']], func
     Route::put('faset/{id}', 'FasetVisitController@update');
     Route::get('notification/send', 'NotificationController@sendNotification');
     Route::post('notification/manual', 'NotificationController@sendNotificationManual');
+    Route::resource('attendance', 'AttendanceController', ['except' => ['create', 'edit', 'store']]);
     Route::resource('users', 'UserController', ['except' => ['create', 'edit']]);
     Route::resource('events', 'EventController', ['except' => ['create', 'edit']]);
     Route::resource('rsvps', 'RsvpController', ['except' => ['create', 'edit']]);
@@ -37,4 +40,5 @@ Route::group(['prefix' => 'v1/', 'middleware' => ['jwt.auth', 'cas.auth']], func
     Route::post('roles/{id}/assign', 'RoleController@assign');
     Route::resource('roles', 'RoleController', ['except' => 'create', 'edit']);
     Route::resource('permissions', 'PermissionController', ['except' => 'create', 'edit']);
+    Route::resource('teams', 'TeamController', ['except' => 'create', 'edit']);
 });

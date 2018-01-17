@@ -48,12 +48,21 @@ class User extends Authenticatable
         'gt_email',
         'name',
         'gtid',
+        'api_token',
         'full_name',
         'is_active',
+        'needs_payment',
         'deleted_at',
         'created_at',
         'updated_at'
     ];
+
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = ['api_token'];
 
     /**
      *  Get the FASET visits associated with this user
@@ -162,9 +171,14 @@ class User extends Authenticatable
     {
         if ($this->dues->count() > 0) {
             $lastDuesTransaction = $this->dues->last();
-            $madePayment = ($lastDuesTransaction->payment->count() > 0);
             $pkgIsActive = $lastDuesTransaction->package->is_active;
-            return ($madePayment && $pkgIsActive);
+            $hasPayment = ($lastDuesTransaction->payment()->exists());
+            if ($hasPayment) {
+                $paidTotal = ($lastDuesTransaction->payment->sum('amount') == $lastDuesTransaction->getPayableAmount());
+                return ($paidTotal && $pkgIsActive);
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
@@ -193,7 +207,7 @@ class User extends Authenticatable
     /**
      * Scope a query to automatically include only active members
      * Active: Has paid dues for a currently ongoing term
-     *         or, has a payment for an active DuesPackage
+     *         or, has a non-zero payment for an active DuesPackage
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param mixed $type
      * @return \Illuminate\Database\Eloquent\Builder
@@ -201,9 +215,11 @@ class User extends Authenticatable
     public function scopeActive($query)
     {
         return $query->whereHas('dues', function ($q) {
-            $q->whereNotNull('payment_id');
             $q->whereHas('package', function ($q) {
                 $q->active();
+            });
+            $q->whereHas('payment', function ($q) {
+                $q->where('amount', '!=', 0);
             });
         });
     }
