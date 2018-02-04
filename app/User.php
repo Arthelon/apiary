@@ -21,6 +21,7 @@ class User extends Authenticatable
     protected $appends = [
         'name',
         'full_name',
+        'preferred_first_name',
         'is_active'];
     
     /**
@@ -47,6 +48,7 @@ class User extends Authenticatable
         'last_name',
         'gt_email',
         'name',
+        'preferred_first_name',
         'gtid',
         'api_token',
         'full_name',
@@ -87,6 +89,14 @@ class User extends Authenticatable
     {
         $first = ($this->preferred_name) ?: $this->first_name;
         return implode(" ", [$first, $this->last_name]);
+    }
+
+    /**
+     * Get the preferred first name associated with the User
+     */
+    public function getPreferredFirstNameAttribute()
+    {
+        return ($this->preferred_name) ?: $this->first_name;
     }
     
     /**
@@ -174,7 +184,7 @@ class User extends Authenticatable
             $pkgIsActive = $lastDuesTransaction->package->is_active;
             $hasPayment = ($lastDuesTransaction->payment()->exists());
             if ($hasPayment) {
-                $paidTotal = ($lastDuesTransaction->payment->sum('amount') == $lastDuesTransaction->getPayableAmount());
+                $paidTotal = ($lastDuesTransaction->payment->sum('amount') >= $lastDuesTransaction->getPayableAmount());
                 return ($paidTotal && $pkgIsActive);
             } else {
                 return false;
@@ -215,12 +225,7 @@ class User extends Authenticatable
     public function scopeActive($query)
     {
         return $query->whereHas('dues', function ($q) {
-            $q->whereHas('package', function ($q) {
-                $q->active();
-            });
-            $q->whereHas('payment', function ($q) {
-                $q->where('amount', '!=', 0);
-            });
+            $q->paid()->current();
         });
     }
 }
