@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Bugsnag;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -23,9 +24,6 @@ class EventController extends Controller
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
-     *
-     * @api {get} /events/ List all events
-     * @apiGroup Users
      */
     public function index()
     {
@@ -42,18 +40,18 @@ class EventController extends Controller
     public function store(Request $request)
     {
         // Default to currently logged-in user
-        if (isset($request->organizer)) {
-            $organizer = User::findByIdentifier($request->organizer)->first();
-        } else {
-            $organizer = auth()->user();
+        if (isset($request->organizer) && !$request->has('organizer_id')) {
+            $request['organizer_id'] = User::findByIdentifier($request->organizer)->first()->id;
+            unset($request['organizer']);
+        } elseif (!$request->has('organizer_id')) {
+            $request['organizer_id'] = auth()->user()->id;
         }
-
-        $request['organizer'] = $organizer->id;
 
         $this->validate($request, [
             'name' => 'required|max:255',
-            'price' => 'numeric',
+            'cost' => 'numeric',
             'allow_anonymous_rsvp' => 'required|boolean',
+            'organizer_id' => 'exists:users,id',
             'location' => 'max:255',
             'start_time' => 'date',
             'end_time' => 'date'
@@ -68,8 +66,7 @@ class EventController extends Controller
         }
 
         if (is_numeric($event->id)) {
-            $dbEvent = Event::findOrFail($event->id);
-            return response()->json(['status' => 'success', 'event' => $dbEvent], 201);
+            return response()->json(['status' => 'success', 'event' => $event], 201);
         } else {
             return response()->json(['status' => 'error', 'message' => 'unknown_error'], 500);
         }
@@ -114,16 +111,18 @@ class EventController extends Controller
                 'message' => 'Forbidden - You do not have permission to update this Event.'], 403);
         }
 
-        if (isset($request->organizer)) {
-            $organizer = User::findByIdentifier($request->organizer)->first();
-            $request['organizer'] = $organizer->id;
+        if ($request->has('organizer') && !$request->has('organizer_id')) {
+            $request['organizer_id'] = User::findByIdentifier($request->organizer)->first()->id;
+            unset($request['organizer']);
+        } elseif (!$request->has('organizer_id')) {
+            $request['organizer_id'] = auth()->user()->id;
         }
 
         $this->validate($request, [
             'name' => 'required|max:255',
             'price' => 'numeric|nullable',
             'allow_anonymous_rsvp' => 'required|boolean',
-            'organizer' => 'required',
+            'organizer_id' => 'required|exists:users,id',
             'location' => 'max:255|nullable',
             'start_time' => 'date|nullable',
             'end_time' => 'date|nullable'
@@ -147,7 +146,7 @@ class EventController extends Controller
 
     public function destroy($id)
     {
-        $event = Event::find();
+        $event = Event::find($id);
         $deleted = $event->delete();
         if ($deleted) {
             return response()->json(['status' => 'success', 'message' => 'event_deleted']);

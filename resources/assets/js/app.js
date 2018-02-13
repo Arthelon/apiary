@@ -8,20 +8,21 @@
 require('./bootstrap');
 var axios = require('axios')
 var dt = require('datatables.net/js/jquery.dataTables');
-/**
- *  Import DataTables for Bootstrap4 module
- */
+
+// Import DataTables for Bootstrap4 module
 require('datatables.net-bs4');
 
 window.Vue = require('vue');
 
-//Import the Vuelidate validation plugin
-
+// Import the Vuelidate validation plugin
 import Vuelidate from 'vuelidate'
-Vue.use(Vuelidate)
+Vue.use(Vuelidate);
+
+// Import the VueSelect component
+import vSelect from 'vue-select'
+Vue.component('v-select', vSelect);
 
 // Import the FlatPickr Date Component
-
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 Vue.use(flatPickr);
@@ -38,18 +39,23 @@ Vue.use(require('vue-moment'));
 // Form Fields
 Vue.component('term-input', require('./components/fields/TermInput.vue'));
 Vue.component('custom-radio-buttons', require('./components/fields/CustomRadioButtons.vue'));
+Vue.component('user-lookup', require('./components/fields/UserLookup.vue'));
 
 // Large Scale Components
 
 Vue.component('datatable', require('./components/Datatable.vue'));
-Vue.component('faset-admin-table', require('./components/wrappers/FasetAdminTable.vue'))
+Vue.component('faset-admin-table', require('./components/wrappers/FasetAdminTable.vue'));
 Vue.component('faset-edit-form', require('./components/FasetEditForm.vue'));
-Vue.component('users-admin-table', require('./components/wrappers/UsersAdminTable.vue'))
+Vue.component('users-admin-table', require('./components/wrappers/UsersAdminTable.vue'));
 Vue.component('user-edit-form', require('./components/UserEditForm.vue'));
-Vue.component('events-admin-table', require('./components/wrappers/EventsAdminTable.vue'))
-Vue.component('event-edit-form', require('./components/EventEditForm.vue'));
 Vue.component('payment-instructions', require('./components/PaymentInstructions.vue'));
 Vue.component('accept-payment', require('./components/AcceptPayment.vue'));
+Vue.component('attendance-modal', require('./components/wrappers/AttendanceModal.vue'));
+
+// Events
+Vue.component('events-admin-table', require('./components/wrappers/EventsAdminTable.vue'));
+Vue.component('event-edit-form', require('./components/events/EventEditForm.vue'));
+Vue.component('event-create-form', require('./components/events/EventCreateForm.vue'));
 
 // Dues
 
