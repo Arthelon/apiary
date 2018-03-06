@@ -84,7 +84,12 @@
       <div class="tab-content">
         <div class="tab-pane show active" id="rsvps">
           <h3>RSVPs</h3>
-
+          <div class="row">
+            <div class="col-sm-4">
+              <label for="rsvpUrl">RSVP URL</label>
+              <input id="rsvpUrl" type="text" class="form-control" disabled v-model="rsvpUrl">
+            </div>
+          </div>
           <datatable id="rsvp-admin-table"
                :data-object="event.rsvps"
                :columns="rsvpTableConfig">
@@ -123,6 +128,7 @@
         hasError: false,
         dataUrl: '',
         baseUrl: "/api/v1/events/",
+        rsvpUrl: "/events/blah/rsvp",
         rsvpTableConfig: [
           {'title': 'ID', 'data': 'id'},
           {'title': 'User', 'data': 'user_id'},
