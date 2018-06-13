@@ -12,6 +12,9 @@
               :is-error="$v.payment.method.$error"
               @input="$v.payment.method.$touch()">
             </custom-radio-buttons>
+            <div class="invalid-feedback">
+              You must select a payment method.
+            </div>
           </div>
         </div>
 
@@ -19,7 +22,9 @@
           <label for="payment-amount" class="col-sm-2 col-form-label">Payment Amount</label>
           <div class="col-sm-10 col-lg-4">
             <div class="input-group">
-              <span class="input-group-addon">$</span>
+              <div class="input-group-prepend">
+                <div class="input-group-text">$</div>
+              </div>
               <input
                 v-model="payment.amount"
                 type="number"
@@ -27,9 +32,15 @@
                 :class="{ 'is-invalid': $v.payment.amount.$error }"
                 @input="$v.payment.amount.$touch()"
                 id="payment-amount">
+              <div :class="{ 'invalid-feedback': payment.method === 'swipe'}" v-if="payment.method === 'swipe'">
+                The payment amount must match the amount due + $3.
+              </div>
+              <div :class="{ 'invalid-feedback': payment.method !== 'swipe'}" v-if="payment.method !== 'swipe'">
+                The payment amount must match the amount due.
+              </div>
             </div>
             <small id="payment-amount-help" class="form-text text-muted">
-              Record the actual amount of money being collected. including surcharges or processing fees.
+              Record the actual amount of money being collected, including surcharges or processing fees.
             </small>
           </div>
         </div>
@@ -99,86 +110,91 @@
 </template>
 
 <script>
-  /*
+/*
    *  @props transactionType: Morph of the Transaction model to attach the payment
    *  @props transactionID: ID of the specific morph of a given Transaction Model
    *  @props amount: The amount of currency in this payment
    *  @emit done: Event emitted after a payment is recorded successfully
    */
 
-  import { numeric, required, sameAs } from 'vuelidate/lib/validators';
+import { numeric, required, sameAs } from 'vuelidate/lib/validators';
 
-  export default {
-    props: {
-      transactionType: {
-        type: String,
-        required: true
+export default {
+  props: {
+    transactionType: {
+      type: String,
+      required: true,
+    },
+    transactionId: {
+      type: Number,
+      required: true,
+    },
+    amount: {
+      required: true,
+    },
+  },
+  data() {
+    return {
+      payment: {
+        payable_id: this.transactionId,
+        payable_type: 'App\\' + this.transactionType,
+        method: '',
+        amount: null,
       },
-      transactionId: {
-        type: Number,
-        required: true
+      paymentMethods: [
+        { value: 'cash', text: 'Cash' },
+        { value: 'check', text: 'Check' },
+        { value: 'swipe', text: 'Swiped Card' },
+        { value: 'square', text: 'Square (Online)' },
+        { value: 'squarecash', text: 'SquareCash' },
+      ],
+      baseUrl: '/api/v1/payments',
+    };
+  },
+  methods: {
+    submit: function() {
+      //Perform form Validation
+      if (this.$v.$invalid) {
+        this.$v.$touch();
+        return;
+      }
+
+      axios
+        .post(this.baseUrl, this.payment)
+        .then(response => {
+          this.$emit('done');
+        })
+        .catch(response => {
+          console.log(response);
+          swal(
+            'Connection Error',
+            'Unable to record payment. Check your internet connection or try refreshing the page.',
+            'error'
+          );
+        });
+    },
+  },
+  computed: {
+    expectedAmount: function() {
+      if (this.payment.method == 'swipe' || this.payment.method == 'square') {
+        return parseFloat(this.amount) + 3;
+      } else {
+        return parseFloat(this.amount);
+      }
+    },
+  },
+  validations: {
+    payment: {
+      method: {
+        required,
       },
       amount: {
-        required: true
-      }
-    },
-    data() {
-      return {
-        payment: {
-          payable_id: this.transactionId,
-          payable_type: "App\\" + this.transactionType,
-          method: "",
-          amount: null
+        numeric,
+        SameAsExpected(value) {
+          return value == this.expectedAmount;
         },
-        paymentMethods: [
-          {value: "cash", text: "Cash"},
-          {value: "check", text: "Check"},
-          {value: "swipe", text: "Swiped Card"},
-          {value: "square", text: "Square (Online)"},
-          {value: "squarecash", text: "SquareCash"},
-        ],
-        baseUrl: "/api/v1/payments",
-      }
+      },
     },
-    methods: {
-      submit: function() {
-        //Perform form Validation
-        if (this.$v.$invalid) {
-          this.$v.$touch();
-          return;
-        }
-
-        axios.post(this.baseUrl, this.payment)
-          .then(response => {
-            this.$emit('done');
-          })
-          .catch(response => {
-            console.log(response);
-            swal("Connection Error", "Unable to record payment. Check your internet connection or try refreshing the page.", "error");
-          })
-      }
-    },
-    computed: {
-      expectedAmount: function() {
-        if (this.payment.method == 'swipe' || this.payment.method == 'square') {
-          return parseFloat(this.amount) + 3;
-        } else {
-          return parseFloat(this.amount);
-        }
-      }
-    },
-    validations: {
-      payment: {
-        method: {
-          required
-        },
-        amount: {
-          numeric,
-          SameAsExpected (value) {
-            return value == this.expectedAmount;
-          }
-        }
-      }
-    }
-  }
+  },
+};
 </script>

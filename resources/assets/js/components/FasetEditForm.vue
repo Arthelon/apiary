@@ -111,8 +111,9 @@
 
         <div class="form-group">
           <button type="submit" class="btn btn-primary">Save Changes</button>
-          <em><span v-bind:class="{ 'text-danger': hasError}"> {{feedback}} </span></em>
+          <button type="button" v-on:click="sendEmail" class="btn btn-secondary">Send Email</button>
         </div>
+        <em><span v-bind:class="{ 'text-danger': hasError}"> {{feedback}} </span></em>
 
       </form>
     </div>
@@ -120,47 +121,83 @@
 </template>
 
 <script>
-  export default {
-    props: ['fasetVisitId'],
-    data() {
-      return {
-        fasetVisit: {},
-        feedback: '',
-        hasError: false,
-        dataUrl: '',
-        baseFasetUrl: "/api/v1/faset/"
-      }
-    },
-    mounted() {
-      this.dataUrl = this.baseFasetUrl + this.fasetVisitId;
-      axios.get(this.dataUrl)
+export default {
+  props: ['fasetVisitId'],
+  data() {
+    return {
+      fasetVisit: {},
+      feedback: '',
+      hasError: false,
+      dataUrl: '',
+      baseFasetUrl: '/api/v1/faset/',
+      notificationUrl: '/api/v1/notification/manual',
+    };
+  },
+  mounted() {
+    this.dataUrl = this.baseFasetUrl + this.fasetVisitId;
+    axios
+      .get(this.dataUrl)
+      .then(response => {
+        var visit = response.data.visit;
+        var survey = visit.faset_responses.map(function(a) {
+          return a.response;
+        });
+        visit.faset_responses = survey;
+        this.fasetVisit = visit;
+      })
+      .catch(response => {
+        console.log(response);
+        swal(
+          'Connection Error',
+          'Unable to load data. Check your internet connection or try refreshing the page.',
+          'error'
+        );
+      });
+  },
+  methods: {
+    submit() {
+      axios
+        .put(this.dataUrl, this.fasetVisit)
         .then(response => {
-          var visit = response.data.visit;
-          var survey = visit.faset_responses.map(function(a) {return a.response;});
-          visit.faset_responses = survey;
-          this.fasetVisit = visit;
-
+          this.hasError = false;
+          this.feedback = 'Saved!';
+          console.log('success');
         })
         .catch(response => {
+          this.hasError = true;
+          this.feedback = '';
           console.log(response);
-          swal("Connection Error", "Unable to load data. Check your internet connection or try refreshing the page.", "error");
+          swal(
+            'Connection Error',
+            'Unable to save data. Check your internet connection or try refreshing the page.',
+            'error'
+          );
         });
     },
-    methods: {
-      submit () {
-        axios.put(this.dataUrl, this.fasetVisit)
+
+    sendEmail(event) {
+      if (this.fasetVisit.faset_email) {
+        axios
+          .post(this.notificationUrl, {
+            emails: [this.fasetVisit.faset_email],
+          })
           .then(response => {
             this.hasError = false;
-            this.feedback = "Saved!"
-            console.log("success");
+            this.feedback = 'Sent!';
+            console.log('success');
           })
           .catch(response => {
             this.hasError = true;
-            this.feedback = "";
+            this.feedback = '';
             console.log(response);
-            swal("Connection Error", "Unable to save data. Check your internet connection or try refreshing the page.", "error");
-          })
+            swal(
+              'Connection Error',
+              'Unable to send email. Check your internet connection or try refreshing the page.',
+              'error'
+            );
+          });
       }
-    }
-  }
+    },
+  },
+};
 </script>

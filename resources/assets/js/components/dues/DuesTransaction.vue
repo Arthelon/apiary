@@ -22,15 +22,20 @@
       <label for="package-cost" class="col-sm-2 col-form-label">Dues Cost</label>
       <div class="col-sm-10 col-lg-4">
         <div class="input-group">
-          <span class="input-group-addon">$</span>
-          <input v-model="package.cost" type="text" readonly class="form-control" id="package-cost">
+          <div class="input-group-prepend">
+            <div class="input-group-text">$</div>
+          </div>
+          <input
+            v-model="package.cost"
+            type="text"
+            readonly
+            class="form-control"
+            id="package-cost">
         </div>
       </div>
     </div>
     <template v-if="duesTransaction.status == 'pending'">
-      <h3>
-        Record Payment
-      </h3>
+      <h3>Record Payment</h3>
       <accept-payment
         transaction-type="DuesTransaction"
         :transaction-id="parseInt(duesTransactionId)"
@@ -38,42 +43,59 @@
         @done="paymentSubmitted">
       </accept-payment>
     </template>
+
+    <show-payments :payments="payments">
+    </show-payments>
   </div>
 </template>
 
 <script>
-  export default {
-    props: {
-      duesTransactionId: {
-        required:true
+export default {
+  props: {
+    duesTransactionId: {
+      required: true,
+    },
+  },
+  data() {
+    return {
+      duesTransaction: {},
+      user: {},
+      package: {},
+      dataUrl: '',
+      baseUrl: '/api/v1/dues/transactions/',
+    };
+  },
+  mounted() {
+    this.dataUrl = this.baseUrl + this.duesTransactionId;
+    axios
+      .get(this.dataUrl)
+      .then(response => {
+        this.duesTransaction = response.data.dues_transaction;
+        this.user = this.duesTransaction.user;
+        this.package = this.duesTransaction.package;
+      })
+      .catch(response => {
+        console.log(response);
+        swal(
+          'Connection Error',
+          'Unable to load data. Check your internet connection or try refreshing the page.',
+          'error'
+        );
+      });
+  },
+  computed: {
+    payments: function() {
+      if (this.duesTransaction.hasOwnProperty('payment')) {
+        return this.duesTransaction.payment;
+      } else {
+        return [];
       }
     },
-    data() {
-      return {
-        duesTransaction: {},
-        user: {},
-        package: {},
-        dataUrl: "",
-        baseUrl: "/api/v1/dues/transactions/"
-      }
+  },
+  methods: {
+    paymentSubmitted: function() {
+      window.location.href = '/admin/dues/pending';
     },
-    mounted() {
-      this.dataUrl = this.baseUrl + this.duesTransactionId;
-      axios.get(this.dataUrl)
-        .then(response => {
-          this.duesTransaction = response.data.dues_transaction;
-          this.user = this.duesTransaction.user;
-          this.package = this.duesTransaction.package;
-        })
-        .catch(response => {
-          console.log(response);
-          swal("Connection Error", "Unable to load data. Check your internet connection or try refreshing the page.", "error");
-        });
-    },
-    methods: {
-      paymentSubmitted: function () {
-        window.location.href= "/admin/dues/pending";
-      }
-    }
-  }
+  },
+};
 </script>
