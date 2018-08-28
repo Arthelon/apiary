@@ -19,10 +19,13 @@
                     </div>
                 </div>
 
-                <div class="form-group row">
+                <div class="form-group row" id="editor">
                     <label for="body_markdown" class="col-sm-2 col-form-label">Body<span style="color:red">*</span></label>
                     <div class="col-sm-12 col-lg-6">
-                        <textarea v-model="template.body_markdown" rows="5" class="form-control" id="body_markdown"></textarea>
+                        <textarea v-model="template.body_markdown" rows="5" class="form-control" id="body_markdown" @input="update"></textarea>
+                    </div>
+                    <div class="col-sm-12 col-lg-6">
+                        <div v-bind="md_output"></div>
                     </div>
                 </div>
 
@@ -40,11 +43,14 @@
 
 <script>
 import { required, numeric, alphaNum } from 'vuelidate/lib/validators';
+import { marked } from 'marked';
 export default {
   name: 'notificationTemplatesCreateForm',
   data() {
     return {
       template: {},
+      md_input: '# hello',
+      md_output: '',
       feedback: '',
       hasError: false,
       baseUrl: '/api/v1/notification/templates',
@@ -63,7 +69,20 @@ export default {
       body_markdown: { required },
     },
   },
+  computed: {
+    compiledMarkdown: function () {
+      console.log('compiling markdown');
+      console.log(this.template.body_markdown);
+      let outMarked = marked(this.template.body_markdown, { sanitize: true });
+      console.log('out: '+outMarked);
+      return outMarked;
+    }
+  },
   methods: {
+    update: _.debounce(function (e) {
+      this.md_input = e.target.value
+    }, 300),
+
     submit() {
       if (this.$v.$invalid) {
         this.$v.$touch();

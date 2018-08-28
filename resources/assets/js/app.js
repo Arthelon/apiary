@@ -15,6 +15,9 @@ require('datatables.net-buttons-bs4');
 require('datatables.net-buttons/js/buttons.html5.js');
 require('datatables.net-buttons/js/buttons.print.js');
 
+//Import Marked for Markdown rendering/editing
+var myMarked = require('marked');
+
 //Import SweetAlert2 for nice alert dialogs
 import swal from 'sweetalert2';
 window.swal = swal;
